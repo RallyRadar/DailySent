@@ -6,10 +6,20 @@ import pandas as pd
 from datetime import datetime, timedelta
 import io
 
+import boto3
+
+session = boto3.Session()
+credentials = session.get_credentials()
+
+if credentials is None:
+    print("ERROR: AWS Credentials NOT found!")
+else:
+    print("SUCCESS: AWS Credentials Loaded!")
+
 # AWS S3 Configuration
 S3_BUCKET = "stock-sentiment-list"  # Change to your actual S3 bucket name
 S3_FILE_KEY = "List of Analysed Stocks.xlsx"
-AWS_REGION = "us-east-1"  # Change if needed
+AWS_REGION = "eu-north-1"  # Change if needed
 
 # Initialize S3 Client
 s3_client = boto3.client('s3')
