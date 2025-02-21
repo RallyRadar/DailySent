@@ -1,28 +1,28 @@
 import praw
 import requests
 import boto3
+import os
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import pandas as pd
 from datetime import datetime, timedelta
 import io
 
-import boto3
-
-session = boto3.Session()
-credentials = session.get_credentials()
-
-if credentials is None:
-    print("ERROR: AWS Credentials NOT found!")
-else:
-    print("SUCCESS: AWS Credentials Loaded!")
+# AWS Credentials from Environment Variables
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")  # Default to eu-north-1 if not set
 
 # AWS S3 Configuration
 S3_BUCKET = "stock-sentiment-list"  # Change to your actual S3 bucket name
 S3_FILE_KEY = "List of Analysed Stocks.xlsx"
-AWS_REGION = "eu-north-1"  # Change if needed
 
 # Initialize S3 Client
-s3_client = boto3.client('s3')
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name=AWS_REGION
+)
 
 def download_stock_list_from_s3():
     """Download stock list from S3 bucket."""
