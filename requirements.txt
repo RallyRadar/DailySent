@@ -1,0 +1,5 @@
+echo "praw
+requests
+boto3
+vaderSentiment
+pandas" > requirements.txt
