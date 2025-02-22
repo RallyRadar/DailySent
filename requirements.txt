@@ -1,7 +1,7 @@
 praw
 requests
 boto3
-vaderSentiment
 pandas
 openpyxl
+
 
