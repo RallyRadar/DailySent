@@ -3,5 +3,6 @@ requests
 boto3
 pandas
 openpyxl
+vaderSentiment
 
 
