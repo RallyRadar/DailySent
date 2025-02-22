@@ -12,6 +12,12 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION", "eu-north-1")  # Default to eu-north-1 if not set
 
+# Debugging: Print AWS Credentials to logs
+print("Checking AWS Credentials...")
+print(f"AWS Access Key: {AWS_ACCESS_KEY_ID}")
+print(f"AWS Secret Key: {'SET' if AWS_SECRET_ACCESS_KEY else 'NOT SET'}")
+print(f"AWS Region: {AWS_REGION}")
+
 # AWS S3 Configuration
 S3_BUCKET = "stock-sentiment-list"  # Change to your actual S3 bucket name
 S3_FILE_KEY = "List of Analysed Stocks.xlsx"
