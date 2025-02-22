@@ -7,13 +7,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 import io
 
-# Ensure required libraries are available
-try:
-    import openpyxl  # Required for reading Excel files
-except ImportError:
-    print("Missing 'openpyxl' module. Install it using 'pip install openpyxl'.")
-    exit(1)
-
 # AWS Credentials from Environment Variables
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -24,11 +17,6 @@ print("Checking AWS Credentials...")
 print(f"AWS Access Key: {'SET' if AWS_ACCESS_KEY_ID else 'NOT SET'}")
 print(f"AWS Secret Key: {'SET' if AWS_SECRET_ACCESS_KEY else 'NOT SET'}")
 print(f"AWS Region: {AWS_REGION}")
-
-# Ensure AWS credentials exist before proceeding
-if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
-    print("ERROR: AWS credentials are missing. Exiting.")
-    exit(1)
 
 # AWS S3 Configuration
 S3_BUCKET = "stock-sentiment-list"  # Change to your actual S3 bucket name
@@ -42,14 +30,19 @@ s3_client = boto3.client(
     region_name=AWS_REGION
 )
 
+def upload_test_file():
+    """Upload a test file to S3 to verify connection."""
+    test_content = "This is a test file to check S3 connectivity."
+    s3_client.put_object(Bucket=S3_BUCKET, Key="test_upload.txt", Body=test_content)
+    print("✅ Uploaded test_upload.txt to stock-sentiment-list")
+
 def download_stock_list_from_s3():
-    """Download stock list from S3 bucket and return as DataFrame."""
-    try:
-        response = s3_client.get_object(Bucket=S3_BUCKET, Key=S3_FILE_KEY)
-        return pd.read_excel(io.BytesIO(response['Body'].read()), engine="openpyxl")
-    except Exception as e:
-        print(f"Error downloading stock list from S3: {e}")
-        exit(1)
+    """Download stock list from S3 bucket."""
+    response = s3_client.get_object(Bucket=S3_BUCKET, Key=S3_FILE_KEY)
+    return pd.read_excel(io.BytesIO(response['Body'].read()))
+
+# Run S3 test upload first
+upload_test_file()
 
 # Load stock list from S3
 stock_list_df = download_stock_list_from_s3()
@@ -111,29 +104,13 @@ def analyze_sentiment(texts):
     return [(text, analyzer.polarity_scores(text)['compound']) for text in texts]
 
 def save_to_s3(filename, df):
-    try:
-        csv_buffer = io.StringIO()
-        df.to_csv(csv_buffer, index=False)
-        
-        print(f"Uploading {filename} to S3 bucket {S3_BUCKET}...")  # Debug print
-        s3_client.put_object(Bucket=S3_BUCKET, Key=filename, Body=csv_buffer.getvalue())
-
-        print(f"✅ Successfully uploaded {filename} to S3.")
-    except Exception as e:
-        print(f"❌ Error uploading {filename}: {e}")
-
-def save_to_s3(filename, df):
-    """Save DataFrame to S3 as a CSV file."""
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
-    try:
-        s3_client.put_object(Bucket=S3_BUCKET, Key=filename, Body=csv_buffer.getvalue())
-        print(f"File saved successfully: {filename}")
-    except Exception as e:
-        print(f"Error saving to S3: {e}")
+    s3_client.put_object(Bucket=S3_BUCKET, Key=filename, Body=csv_buffer.getvalue())
+    print(f"✅ Uploaded {filename} to S3.")
 
-def lambda_handler(event, context):
-    """AWS Lambda entry point."""
+def run_sentiment_analysis():
+    """Main function for sentiment analysis"""
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(hours=24)
     timestamp_range = f"{start_time.strftime('%Y-%m-%d %H:%M UTC')} to {end_time.strftime('%Y-%m-%d %H:%M UTC')}"
@@ -168,21 +145,8 @@ def lambda_handler(event, context):
     save_to_s3(f"extreme_sentiment_{current_date}.csv", extreme_sentiments_df)
     save_to_s3(f"daily_avg_sentiment_{current_date}.csv", daily_averages_df)
     save_to_s3(f"detailed_sentiment_{current_date}.csv", all_sentiments_df)
-    
-    return {
-        'statusCode': 200,
-        'body': "Sentiment analysis completed successfully!"
-    }
-def test_s3_upload():
-    """Test function to upload a small test file to S3."""
-    test_filename = "test_upload.txt"
-    test_content = "This is a test file to verify S3 upload permissions."
 
-    try:
-        s3_client.put_object(Bucket=S3_BUCKET, Key=test_filename, Body=test_content)
-        print(f"✅ Uploaded {test_filename} to {S3_BUCKET}")
-    except Exception as e:
-        print(f"❌ S3 Upload Failed: {e}")
+    print("✅ Sentiment analysis completed successfully!")
 
-# Run test
-test_s3_upload()
+# Run sentiment analysis after test file upload
+run_sentiment_analysis()
