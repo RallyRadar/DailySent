@@ -111,6 +111,18 @@ def analyze_sentiment(texts):
     return [(text, analyzer.polarity_scores(text)['compound']) for text in texts]
 
 def save_to_s3(filename, df):
+    try:
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        
+        print(f"Uploading {filename} to S3 bucket {S3_BUCKET}...")  # Debug print
+        s3_client.put_object(Bucket=S3_BUCKET, Key=filename, Body=csv_buffer.getvalue())
+
+        print(f"✅ Successfully uploaded {filename} to S3.")
+    except Exception as e:
+        print(f"❌ Error uploading {filename}: {e}")
+
+def save_to_s3(filename, df):
     """Save DataFrame to S3 as a CSV file."""
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer, index=False)
@@ -161,3 +173,16 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': "Sentiment analysis completed successfully!"
     }
+def test_s3_upload():
+    """Test function to upload a small test file to S3."""
+    test_filename = "test_upload.txt"
+    test_content = "This is a test file to verify S3 upload permissions."
+
+    try:
+        s3_client.put_object(Bucket=S3_BUCKET, Key=test_filename, Body=test_content)
+        print(f"✅ Uploaded {test_filename} to {S3_BUCKET}")
+    except Exception as e:
+        print(f"❌ S3 Upload Failed: {e}")
+
+# Run test
+test_s3_upload()
